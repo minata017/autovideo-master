@@ -1,0 +1,30 @@
+{
+  "ten": "vien-mong",
+  "mo_ta": "Chữ trắng viền đen mỏng, bóng nhẹ. Phụ đề gọn gàng cho video bài giảng, phỏng vấn, nội dung nghiêm túc - thay cho kiểu chữ mảnh đã bỏ.",
+  "font": {
+    "file": "OpenSans-Bold.ttf",
+    "dam": 700
+  },
+  "co_chu": {
+    "nguyen": 81,
+    "hoa": 70,
+    "thuong": 81,
+    "hoa_dau": 76
+  },
+  "hoa_thuong": "nguyen",
+  "mau_chu": "#FFFFFF",
+  "vien": [
+    {
+      "day": 4,
+      "mau": "#000000"
+    }
+  ],
+  "bong": {
+    "x": 0,
+    "y": 4,
+    "nhoe": 6,
+    "mau": "#000000",
+    "do_dam": 0.7
+  },
+  "_he_so_ass": 1.3618
+}

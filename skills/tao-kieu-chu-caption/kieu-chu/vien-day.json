@@ -1,0 +1,30 @@
+{
+  "ten": "vien-day",
+  "mo_ta": "Chữ trắng viền đen dày, bóng cứng. Kiểu phụ đề TikTok/Reels - đọc được trên mọi nền.",
+  "font": {
+    "file": "Montserrat-Black.ttf",
+    "dam": 900
+  },
+  "co_chu": {
+    "nguyen": 90,
+    "hoa": 76,
+    "thuong": 91,
+    "hoa_dau": 84
+  },
+  "hoa_thuong": "nguyen",
+  "mau_chu": "#FFFFFF",
+  "vien": [
+    {
+      "day": 9,
+      "mau": "#000000"
+    }
+  ],
+  "bong": {
+    "x": 0,
+    "y": 7,
+    "nhoe": 0,
+    "mau": "#000000",
+    "do_dam": 0.85
+  },
+  "_he_so_ass": 1.219
+}

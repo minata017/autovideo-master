@@ -1,0 +1,23 @@
+{
+  "ten": "nen-khoi",
+  "mo_ta": "Chữ trắng trên khối nền đen mờ bo góc. Kiểu thẻ từ khoá - luôn đọc được kể cả nền rối.",
+  "font": {
+    "file": "BeVietnamPro-SemiBold.ttf",
+    "dam": 600
+  },
+  "co_chu": {
+    "nguyen": 91,
+    "hoa": 75,
+    "thuong": 91,
+    "hoa_dau": 83
+  },
+  "hoa_thuong": "nguyen",
+  "mau_chu": "#F3F4F6",
+  "nen": {
+    "mau": "#0B0F1A",
+    "do_dam": 0.72,
+    "dem": 28,
+    "bo_goc": 14
+  },
+  "_he_so_ass": 1.265
+}

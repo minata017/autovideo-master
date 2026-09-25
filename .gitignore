@@ -1,0 +1,45 @@
+# File moi truong chua API Key (Bao mat tuyet doi, cam day len Git)
+.env
+.env.local
+.env.*.local
+*.key
+*.token
+
+# Du lieu tam va thanh pham
+temp/*
+!temp/.gitkeep
+output/*
+!output/.gitkeep
+input/*
+!input/.gitkeep
+!input/broll/
+!input/broll/.gitkeep
+
+# Thu muc clone tam thoi khi setup
+temp_clone/
+
+# Bo cai FFmpeg cuc bo (dung luong lon, script tu tai)
+bin/*
+!bin/.gitkeep
+
+# Python & Node artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/

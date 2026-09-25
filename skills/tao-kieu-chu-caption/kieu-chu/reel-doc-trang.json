@@ -1,0 +1,38 @@
+{
+  "ten": "reel-doc-trang",
+  "mo_ta": "Phụ đề reel dọc kiểu chuyên gia nói trước máy: chữ trắng IN HOA, đậm, KHÔNG viền, bóng mềm, đặt ngang ngực. Dựng theo video mẫu thật (đo 15/08/2026, độ trùng 78,1%).",
+  "font": {
+    "file": "FiraSans-Black.ttf",
+    "dam": 900
+  },
+  "khung": {
+    "rong": 1080,
+    "cao": 1920
+  },
+  "chuan_co": {
+    "kieu": "cao-chu",
+    "ti_le": 0.0239
+  },
+  "vi_tri": {
+    "tam_doc": 0.5769
+  },
+  "hoa_thuong": "hoa",
+  "mau_chu": "#FFFFFF",
+  "vien": [],
+  "bong": {
+    "x": 0,
+    "y": 3,
+    "nhoe": 12,
+    "mau": "#000000",
+    "do_dam": 0.55
+  },
+  "co_chu": {
+    "nguyen": 66,
+    "hoa": 66,
+    "thuong": 66,
+    "hoa_dau": 66
+  },
+  "bop_ngang": 110,
+  "gian_chu": 0,
+  "_he_so_ass": 1.2
+}

@@ -1,0 +1,128 @@
+{
+  "ghi_chu": "Kho font miễn phí cho cả mục đích thương mại, lấy từ Google Fonts. Mọi font ở đây ĐÃ KIỂM đủ dấu tiếng Việt.",
+  "nhom_dang": {
+    "hinh-hoc-tron": "Tròn trịa, thân thiện - reel đời sống, mẹ và bé",
+    "hinh-hoc-vuong": "Vuông vức, chắc chắn - reel kinh doanh, chuyên gia",
+    "grotesk-hien-dai": "Trung tính, hiện đại - công nghệ, giáo dục",
+    "hep": "Hẹp ngang, nhét được nhiều chữ - tin tức, thể thao",
+    "dam-ap-phich": "Rất đậm, hô to - bán hàng, khẩu hiệu",
+    "humanist": "Mềm, dễ đọc lâu - tài liệu, phỏng vấn"
+  },
+  "font": [
+    {
+      "tenFile": "BeVietnamPro-SemiBold.ttf",
+      "dang": "hinh-hoc-vuong",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BeVietnamPro-Bold.ttf",
+      "dang": "hinh-hoc-vuong",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BeVietnamPro-ExtraBold.ttf",
+      "dang": "hinh-hoc-vuong",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BeVietnamPro-Black.ttf",
+      "dang": "hinh-hoc-vuong",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BarlowCondensed-SemiBold.ttf",
+      "dang": "hep",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BarlowCondensed-Bold.ttf",
+      "dang": "hep",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BarlowCondensed-ExtraBold.ttf",
+      "dang": "hep",
+      "sanCo": true
+    },
+    {
+      "tenFile": "BarlowCondensed-Black.ttf",
+      "dang": "hep",
+      "sanCo": true
+    },
+    {
+      "tenFile": "FiraSans-SemiBold.ttf",
+      "dang": "humanist",
+      "sanCo": true
+    },
+    {
+      "tenFile": "FiraSans-Bold.ttf",
+      "dang": "humanist",
+      "sanCo": true
+    },
+    {
+      "tenFile": "FiraSans-ExtraBold.ttf",
+      "dang": "humanist",
+      "sanCo": true
+    },
+    {
+      "tenFile": "FiraSans-Black.ttf",
+      "dang": "humanist",
+      "sanCo": true
+    },
+    {
+      "tenFile": "Montserrat-SemiBold.ttf",
+      "ten": "Montserrat SemiBold",
+      "dang": "hinh-hoc-vuong"
+    },
+    {
+      "tenFile": "Montserrat-Bold.ttf",
+      "ten": "Montserrat Bold",
+      "dang": "hinh-hoc-vuong"
+    },
+    {
+      "tenFile": "Montserrat-ExtraBold.ttf",
+      "ten": "Montserrat ExtraBold",
+      "dang": "hinh-hoc-vuong"
+    },
+    {
+      "tenFile": "Montserrat-Black.ttf",
+      "ten": "Montserrat Black",
+      "dang": "hinh-hoc-vuong"
+    },
+    {
+      "tenFile": "OpenSans-SemiBold.ttf",
+      "ten": "Open Sans SemiBold",
+      "dang": "humanist"
+    },
+    {
+      "tenFile": "OpenSans-Bold.ttf",
+      "ten": "Open Sans Bold",
+      "dang": "humanist"
+    },
+    {
+      "tenFile": "OpenSans-ExtraBold.ttf",
+      "ten": "Open Sans ExtraBold",
+      "dang": "humanist"
+    },
+    {
+      "tenFile": "Mulish-SemiBold.ttf",
+      "ten": "Mulish SemiBold",
+      "dang": "hinh-hoc-tron"
+    },
+    {
+      "tenFile": "Mulish-Bold.ttf",
+      "ten": "Mulish Bold",
+      "dang": "hinh-hoc-tron"
+    },
+    {
+      "tenFile": "Mulish-ExtraBold.ttf",
+      "ten": "Mulish ExtraBold",
+      "dang": "hinh-hoc-tron"
+    },
+    {
+      "tenFile": "Mulish-Black.ttf",
+      "ten": "Mulish Black",
+      "dang": "hinh-hoc-tron"
+    }
+  ]
+}

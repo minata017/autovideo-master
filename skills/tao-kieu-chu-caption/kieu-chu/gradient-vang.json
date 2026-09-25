@@ -1,0 +1,40 @@
+{
+  "ten": "gradient-vang",
+  "mo_ta": "Chữ đổ màu vàng cam, viền đen. Dùng cho từ khoá nhấn, con số, lời hứa.",
+  "font": {
+    "file": "Montserrat-Black.ttf",
+    "dam": 900
+  },
+  "co_chu": {
+    "nguyen": 85,
+    "hoa": 72,
+    "thuong": 86,
+    "hoa_dau": 79
+  },
+  "hoa_thuong": "hoa",
+  "gian_chu": 2,
+  "mau_chu": "#F5A524",
+  "gradient": {
+    "tu": "#FFE070",
+    "den": "#F5A524",
+    "goc": 180
+  },
+  "vien": [
+    {
+      "day": 3,
+      "mau": "#7A4A00"
+    },
+    {
+      "day": 6,
+      "mau": "#000000"
+    }
+  ],
+  "bong": {
+    "x": 0,
+    "y": 8,
+    "nhoe": 0,
+    "mau": "#000000",
+    "do_dam": 0.8
+  },
+  "_he_so_ass": 1.219
+}
