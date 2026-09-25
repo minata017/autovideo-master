@@ -8,6 +8,7 @@
 # Du lieu tam va thanh pham
 temp/*
 !temp/.gitkeep
+**/temp/
 output/*
 !output/.gitkeep
 input/*
@@ -17,6 +18,14 @@ input/*
 
 # Thu muc clone tam thoi khi setup
 temp_clone/
+
+# Scripts tai tu kho goc khi cai dat (khong dong goi do giay phep khoa hoc)
+skills/autovideo-toolkit/scripts/*.py
+!skills/autovideo-toolkit/scripts/nen-video.py
+!skills/autovideo-toolkit/scripts/tao-video-tu-kich-ban.py
+skills/tao-kieu-chu-caption/scripts/
+skills/dung-broll-collage/scripts/
+skills/dung-broll-collage/vendor/
 
 # Bo cai FFmpeg cuc bo (dung luong lon, script tu tai)
 bin/*

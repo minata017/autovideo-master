@@ -16,6 +16,8 @@ irm https://raw.githubusercontent.com/minata017/autovideo-master/main/cai-dat.ps
 curl -fsSL https://raw.githubusercontent.com/minata017/autovideo-master/main/cai-dat.sh | bash
 ```
 
+> **Lưu ý:** Script cài đặt sẽ tự động tải 21 script xử lý video từ kho gốc của tác giả `sontyphu` (do giấy phép khóa học, repo này không đóng gói lại). Cần kết nối mạng khi cài lần đầu.
+
 ---
 
 ## ⚙️ Cấu hình ban đầu
