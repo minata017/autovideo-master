@@ -5,7 +5,7 @@
 3. 5 kiểm thử logic đạt: cảnh liên tục hết audio, gộp cắt chồng nhau, chuyển mốc từ sau cắt, giới hạn phụ đề, từ chối cắt hết/điểm không hợp lệ và làm tròn thời gian.
 4. Khóa cục bộ có mặt; không đưa khóa vào mã, báo cáo hoặc commit. Mạng bị chặn thì báo lỗi, không giả kết quả. Không dùng mẫu TTS để thay bài giảng thật.
 
-Chưa nghe đánh giá nghệ thuật toàn bộ hai file; chưa thử đầy đủ bài giảng 102 phút; macOS/Linux chưa thử native. Chi tiết installer được bổ sung sau lượt kiểm tra sạch.
+Trạng thái ở lượt kiểm thử ban đầu: chưa nghe đánh giá nghệ thuật toàn bộ hai file; chưa thử đầy đủ bài giảng 102 phút; macOS/Linux chưa thử native. Cập nhật lượt sau ngày 26/09/2026: Windows/macOS đã đạt kiểm thử native, K31 đã phiên âm cả buổi và lập bảng 16 bài chờ duyệt; xem bao-cao-bo-sung.md. Chi tiết installer được bổ sung sau lượt kiểm tra sạch.
 
 5. Installer Windows đã chạy ở thư mục trống autovideo-clean-install: tạo .venv, cài 16 phụ thuộc, tải FFmpeg/ffprobe vào bin, lệnh kiem-tra errors=[] với .env rỗng; chưa phải kiểm thử Windows không cài sẵn Python/uv.
 6. Dùng chính .venv và FFmpeg của bản cài sạch xuất 16:9, ảnh local zoom, karaoke, nhạc tone tự tạo + SFX; video 23.366667s/audio 23.376s. Kiểm tra thực thi và thời lượng; chưa đánh giá cân bằng âm thanh bằng tai.
