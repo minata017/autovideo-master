@@ -20,6 +20,9 @@ Dùng cùng `tach-video.py` cho hai mục đích: bài học và clip ngắn. Py
 - Mỗi điểm dừng có khối activity trong blocks: instructions, yêu cầu thực hành/mở trang web/làm bài tập, duration_minutes theo lời giảng hoặc null khi làm đến lúc xong, next_video trong cùng bài và khoảng nguồn rút. Mặc định đặt ghi chú dưới video để dùng khi tạo web, không gắn chữ lên hình. Không lấy độ dài khoảng chờ làm số phút bài tập.
 - Phiên âm trống hay câu lặp đáng ngờ không đủ để chốt loại khoảng. Ghi rõ bằng chứng/độ chắc chắn, kiểm tra âm thanh và hình tại khoảng chờ trước khi chốt xuất.
 
+## Kiểm tra nhạc trước khi xuất
+Kiểm tra cả nhạc có sẵn trong video nguồn và nhạc/SFX chèn thêm. Ghi mốc đoạn, nguồn, bằng chứng giấy phép, phạm vi sử dụng và yêu cầu ghi công. Nếu chưa xác minh được, báo rõ điều chưa biết rồi đưa ba phương án: 1. Giữ âm thanh gốc với trạng thái quyền chưa xác minh; 2. Bỏ riêng nhạc, giữ lời giảng và báo nếu không thể tách sạch; 3. Thay bằng nhạc có giấy phép phù hợp. Người dùng chọn trước khi xử lý; không tự chọn thay họ. Lưu quyết định và mục đích sử dụng trong thư mục công việc. Việc chọn giữ để thử riêng không được ghi thành xác nhận đã được cấp phép. Không mặc định dùng tài nguyên chưa xác minh; không coi nền tảng không báo lỗi hoặc AI nhận diện tên nhạc là bằng chứng được phép.
+
 ## Xuất và kiểm tra
 - Khi bảng đã duyệt: `xuat --job DIR --duyet --muc-dich bai-hoc` hoặc `--muc-dich clip-ngan`.
 - Bài học mặc định giữ tỷ lệ/kích thước gốc, phụ đề rời. Clip ngắn mặc định 9:16 crop giữa; xem hình trước vì chưa có theo dõi khuôn mặt/tài liệu. Dùng `--khung goc` khi crop mất nội dung. `--phu-de gan` gắn chữ lên hình nếu phù hợp, `--phu-de roi` giữ hình sạch.

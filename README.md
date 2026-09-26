@@ -34,7 +34,7 @@ Muốn chèn B-roll vào video đã cắt: đặt `approved=true` trong `diem-ca
 - 6 kiểu chữ: vang-den, trang-den, toi-gian, nen-den, karaoke, shorts. ASS hỗ trợ dấu tiếng Việt, mốc từng từ và xuống dòng ngắn.
 - Ảnh cục bộ có chuyển động zoom nhẹ; video được căn theo thời gian giọng đọc, cắt/crop về khung 9:16 hoặc 16:9, tắt tiếng B-roll.
 - Nhạc: `xuat ... --nhac "D:/nhac-co-quyen-dung.mp3"`; nhạc giảm âm lượng khi có giọng đọc.
-- SFX: `--sfx input/sfx.json`, nội dung mẫu `[{"file":"D:/ting.wav","at":2.5,"volume":0.25}]`. Chỉ dùng âm thanh có quyền sử dụng đã xác nhận.
+- SFX: `--sfx input/sfx.json`, nội dung mẫu `[{"file":"D:/ting.wav","at":2.5,"volume":0.25}]`. Không mặc định dùng âm thanh chưa xác minh quyền; xem bước kiểm tra nhạc trong AGENTS.md.
 - `xuat` mã hóa H.264 CRF 20 một lần ở bước cuối, AAC, faststart. CRF có mất dữ liệu; không hứa tỷ lệ giảm dung lượng cố định. `nen` chỉ dành cho video có sẵn cần nén riêng.
 - Không ghi đè thành phẩm; mỗi việc có thư mục riêng. `ket-qua.json` ghi thời lượng đo thực tế, phụ đề cuối và nguồn cảnh.
 
@@ -55,3 +55,6 @@ Collage chia ô 2–4 ảnh/video: trong selected dùng files là danh sách đ�
 
 ## Tách video dài theo nội dung
 Dùng chung skill tach-video-theo-noi-dung cho bài học và clip ngắn, phần xử lý ở tach-video.py. Một bài có thể gồm nhiều video và ghi chú/hoạt động xen giữa; cau-truc-bai-hoc.json giữ thứ tự để tạo web sau này. AI đọc nội dung để lập bảng; mã kiểm tra mốc và xuất hàng loạt, lưu tiến độ và phục hồi lỗi. Bài học giữ khung gốc, phụ đề rời; clip ngắn có lựa chọn 9:16/16:9/gốc. Xem huong-dan-su-dung-ai.md để cài Windows/macOS và ra lệnh bằng tiếng Việt trong Codex/Claude Code/Antigravity/Cursor.
+
+## Nhạc trong video nguồn
+Trước khi xuất, AI kiểm tra nguồn và phạm vi giấy phép của nhạc. Nếu chưa xác minh được thì báo rõ và đưa lựa chọn giữ, bỏ hoặc thay; người dùng quyết định. Lưu lựa chọn trong công việc, giữ nguyên trạng thái giấy phép chưa xác minh nếu chọn giữ. Hướng dẫn đầy đủ ở AGENTS.md; đây là bước AI điều phối, chưa có máy tự nhận diện và xác minh mọi bài nhạc.
