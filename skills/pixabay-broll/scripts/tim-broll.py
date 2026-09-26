@@ -14,8 +14,15 @@ import os
 import sys
 import argparse
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import quote_plus
+
+# Fix encoding cho Windows console (cp1252 khong in duoc tieng Viet)
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 try:
     import requests
@@ -65,12 +72,23 @@ def tim_video_pixabay(api_key, keyword, khung="9:16", so_luong=5):
     else:
         params["min_width"] = 720
 
-    try:
-        resp = requests.get(PIXABAY_API_URL, params=params, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-    except requests.RequestException as e:
-        print(f"[pixabay] LOI goi API: {e}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            resp = requests.get(PIXABAY_API_URL, params=params, timeout=15)
+            if resp.status_code == 429:
+                wait = 2 ** (attempt + 1)  # 2s, 4s, 8s
+                print(f"[pixabay] Rate limit (429), cho {wait}s roi thu lai...")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except requests.RequestException as e:
+            print(f"[pixabay] LOI goi API: {e}")
+            return []
+    else:
+        print("[pixabay] Het so lan thu (rate limit lien tuc)")
         return []
 
     if data.get("totalHits", 0) == 0:
@@ -150,28 +168,94 @@ def chon_resolution(videos_dict, khung):
                 return v
     return tot_nhat
 
+# Bang anh xa khai niem tieng Viet -> keyword tieng Anh cho Pixabay
+# Pixabay tra ve nhieu ket qua hon khi tim bang tieng Anh
+VIET_EN_MAP = {
+    # Cong nghe
+    "trí tuệ nhân tạo": "artificial intelligence",
+    "công nghệ": "technology",
+    "máy tính": "computer",
+    "điện thoại": "smartphone",
+    "lập trình": "programming coding",
+    "internet": "internet network",
+    "mạng xã hội": "social media",
+    "video": "video production",
+    "dữ liệu": "data analytics",
+    "robot": "robot automation",
+    # Kinh doanh
+    "kinh doanh": "business office",
+    "marketing": "marketing advertising",
+    "quảng cáo": "advertising commercial",
+    "khách hàng": "customer service",
+    "bán hàng": "sales shopping",
+    "tiền": "money finance",
+    "tài chính": "finance investment",
+    "thương mại": "ecommerce business",
+    "doanh nghiệp": "corporate business",
+    "thành công": "success achievement",
+    "mục tiêu": "goal target",
+    # Giao duc
+    "học": "education learning",
+    "sách": "book reading",
+    "giáo viên": "teacher classroom",
+    "trường": "school university",
+    "kiến thức": "knowledge education",
+    "kỹ năng": "skills training",
+    "sáng tạo": "creative inspiration",
+    # Doi song
+    "sức khỏe": "health wellness",
+    "thể dục": "fitness exercise",
+    "gia đình": "family home",
+    "thiên nhiên": "nature landscape",
+    "thành phố": "city urban",
+    "du lịch": "travel adventure",
+    "ẩm thực": "food cooking",
+    "âm nhạc": "music concert",
+    "người": "people lifestyle",
+    "cuộc sống": "lifestyle daily",
+    "hành trình": "journey adventure",
+    "tương lai": "future innovation",
+    "thay đổi": "change transformation",
+    "phát triển": "growth development",
+    "giọng nói": "voice speaking microphone",
+    "nội dung": "content creation",
+    "chuyên nghiệp": "professional work",
+    "clip": "video film",
+    "đơn giản": "simple minimal",
+    "nổi bật": "standout highlight",
+}
+
 
 def rut_keyword(cau):
-    """Rut keyword tim kiem tu cau tieng Viet.
+    """Rut keyword tieng Anh tu cau tieng Viet de tim tren Pixabay.
 
-    Giu danh tu chinh, bo tu dem va lien tu.
+    Dung bang anh xa VIET_EN_MAP, tim cum tu dai nhat khop truoc.
+    Neu khong khop -> tra ve cau goc da loc tu dem.
     """
-    # Danh sach tu bo (tieng Viet pho bien)
+    cau_lower = cau.lower()
+
+    # Tim cum tu dai nhat khop trong bang
+    best_match = ""
+    best_en = ""
+    for viet, en in VIET_EN_MAP.items():
+        if viet in cau_lower and len(viet) > len(best_match):
+            best_match = viet
+            best_en = en
+
+    if best_en:
+        return best_en
+
+    # Fallback: loc tu dem tieng Viet, tra ve 3-4 tu
     bo_tu = {
-        "la", "cua", "va", "nhung", "cac", "mot", "nhu", "tai", "trong",
-        "cho", "voi", "dang", "da", "se", "duoc", "co", "khong", "rat",
-        "nay", "do", "khi", "thi", "ma", "de", "tu", "den", "bang",
         "là", "của", "và", "những", "các", "một", "như", "tại", "trong",
         "cho", "với", "đang", "đã", "sẽ", "được", "có", "không", "rất",
         "này", "đó", "khi", "thì", "mà", "để", "từ", "đến", "bằng",
+        "bạn", "tôi", "chúng", "ta", "nay", "hôm", "ngày", "ra",
+        "cách", "vào", "lên", "xuống", "qua", "lại", "đi", "về",
     }
-
-    # Tach tu va loc
-    tu_list = cau.lower().split()
+    tu_list = cau_lower.split()
     tu_giu = [t for t in tu_list if t not in bo_tu and len(t) > 1]
-
-    # Gioi han 3-4 tu cho query
-    return " ".join(tu_giu[:4])
+    return " ".join(tu_giu[:3])
 
 
 def tai_video(url, output_path, timeout=60):
@@ -291,12 +375,14 @@ def main():
         print(f"  Keyword: {keyword} | {start:.1f}s - {end:.1f}s")
 
         hits = tim_video_pixabay(api_key, keyword, args.khung, so_luong=3)
+        time.sleep(1.5)  # Tranh 429 rate limit (Pixabay free tier)
 
         if not hits:
             # Thu keyword rong hon
             keyword_rong = keyword.split()[0] if " " in keyword else keyword
             print(f"  Khong tim thay, thu keyword rong hon: {keyword_rong}")
             hits = tim_video_pixabay(api_key, keyword_rong, args.khung, so_luong=3)
+            time.sleep(1.5)
 
         if hits:
             best = hits[0]

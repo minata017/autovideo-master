@@ -86,14 +86,46 @@ async def tao_giong_va_phu_de(text, audio_path, srt_path, voice="vi-VN-HoaiMyNeu
                     "end": round(start_s + dur_s, 3),
                 })
 
-    # Xuat SRT tu SubMaker (da can chinh tu dong)
-    srt_content = submaker.get_srt()
+    # Tao SRT gom 4-5 tu/dong (SubMaker mac dinh tung tu mot, kho doc)
+    def format_srt_time(seconds):
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = seconds % 60
+        ms = int((s - int(s)) * 1000)
+        return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
+
+    srt_lines = []
+    group = []
+    group_start = 0.0
+    idx = 1
+    for wt in word_timings:
+        if not group:
+            group_start = wt["start"]
+        group.append(wt["word"])
+        text = " ".join(group)
+        is_end = text.rstrip().endswith((".", "?", "!", ","))
+        if len(group) >= 5 or (len(group) >= 3 and is_end):
+            srt_lines.append(
+                f"{idx}\n"
+                f"{format_srt_time(group_start)} --> {format_srt_time(wt['end'])}\n"
+                f"{text.strip()}\n"
+            )
+            idx += 1
+            group = []
+    if group:
+        srt_lines.append(
+            f"{idx}\n"
+            f"{format_srt_time(group_start)} --> {format_srt_time(word_timings[-1]['end'])}\n"
+            f"{' '.join(group).strip()}\n"
+        )
+
+    srt_content = "\n".join(srt_lines)
     Path(srt_path).write_text(srt_content, encoding="utf-8")
 
     duration = lay_do_dai(audio_path)
     print(f"[autovideo] Giong doc: {Path(audio_path).name} ({voice})")
     print(f"[autovideo] Do dai audio: {duration:.1f} giay")
-    print(f"[autovideo] Phu de SRT: {len(srt_content.strip().split(chr(10) + chr(10)))} dong")
+    print(f"[autovideo] Phu de SRT: {len(srt_lines)} dong (gom 4-5 tu/dong)")
 
     # Chia thanh cac cau (de tim B-roll)
     # Gom tu thanh cau dua tren dau cham, cham hoi, cham than
@@ -256,6 +288,9 @@ def tim_broll_pixabay(cau_list, khung, temp_dir):
         json.dump(canh_data, f, ensure_ascii=False, indent=2)
 
     # Goi tim-broll.py voi flag --tai
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+
     cmd = [
         sys.executable, str(BROLL_SCRIPT),
         "--canh", str(canh_file),
@@ -264,14 +299,25 @@ def tim_broll_pixabay(cau_list, khung, temp_dir):
     ]
 
     print(f"\n[autovideo] Tim B-roll Pixabay cho {len(cau_list)} canh...")
-    result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace", env=env)
 
     if "CHUA CO API KEY" in result.stdout:
         print("[autovideo] Chua co PIXABAY_API_KEY trong .env -> dung nen mau")
         return False
 
     if result.returncode != 0:
-        print(f"[autovideo] Loi tim B-roll: {result.stderr[:300]}")
+        err_msg = result.stderr.strip() if result.stderr else result.stdout.strip()
+        if "401" in err_msg or "Unauthorized" in err_msg:
+            print("[autovideo] Pixabay API key bi tu choi (401)")
+        elif "ConnectionError" in err_msg or "Timeout" in err_msg:
+            print("[autovideo] Loi mang khi goi Pixabay API")
+        else:
+            print(f"[autovideo] Loi tim B-roll (exit {result.returncode}):")
+            # In toi da 5 dong loi cuoi
+            lines = err_msg.split("\n")
+            for l in lines[-5:]:
+                print(f"  {l}")
         return False
 
     # In ket qua
