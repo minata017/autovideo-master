@@ -28,6 +28,41 @@ class CourseTests(unittest.TestCase):
             changed={**lesson,'practice':{**note,'duration_minutes':10}}
             self.assertNotEqual(course.plan_hash([lesson],{}),course.plan_hash([changed],{}))
 
+    def grouped_plan(self):
+        return {'lessons':[{'id':'bai-1','title':'Một bài hai video','blocks':[
+            {'type':'video','id':'clip-1','title':'Hướng dẫn','segments':[{'start':0,'end':10}]},
+            {'type':'activity','id':'tap-1','instructions':'Đọc 8 phút rồi xem phần 2','duration_minutes':8,'next_video':'clip-2'},
+            {'type':'video','id':'clip-2','title':'Phản hồi','segments':[{'start':490,'end':510}]}]}]}
+
+    def test_one_lesson_contains_two_videos_with_activity_between(self):
+        plan=self.grouped_plan()
+        videos=course.validate_plan(plan,{'start':0,'end':510})
+        self.assertEqual([v['lesson_id'] for v in videos],['bai-1','bai-1'])
+        self.assertEqual([v['part_number'] for v in videos],[1,2])
+        self.assertEqual(videos[0]['activities_after'][0]['duration_minutes'],8)
+        self.assertEqual(videos[1]['segments'],[{'start':490.0,'end':510.0}])
+        with tempfile.TemporaryDirectory() as temp:
+            job=Path(temp)
+            course.catalogue(job,videos,{},plan)
+            data=course.av.load_json(job/'cau-truc-bai-hoc.json')
+            self.assertEqual(len(data['lessons']),1)
+            self.assertEqual([b['type'] for b in data['lessons'][0]['blocks']],['video','activity','video'])
+            text=(job/'danh-muc.md').read_text(encoding='utf-8')
+            self.assertLess(text.index('Hướng dẫn'),text.index('Đọc 8 phút'))
+            self.assertLess(text.index('Đọc 8 phút'),text.index('Phản hồi'))
+
+    def test_activity_edit_invalidates_approval_and_bad_links_rejected(self):
+        import copy
+        plan=self.grouped_plan()
+        original=course.plan_hash(course.validate_plan(plan,{'start':0,'end':510}),plan)
+        changed=copy.deepcopy(plan)
+        changed['lessons'][0]['blocks'][1]['instructions']='Mở trang web và làm bài tập'
+        self.assertNotEqual(original,course.plan_hash(course.validate_plan(changed,{'start':0,'end':510}),changed))
+        for value in ['missing','clip-1']:
+            changed=copy.deepcopy(plan)
+            changed['lessons'][0]['blocks'][1]['next_video']=value
+            with self.assertRaises(course.av.VideoError):course.validate_plan(changed,{'start':0,'end':510})
+
     def test_absolute_ranges_and_removed_gaps(self):
         ranges=[(120,125),(130,140)]
         cuts=course.complement(ranges,120,140)

@@ -24,9 +24,19 @@ def main():
         app.av.save_json(job/'phien-am.json',{'words':words})
         lessons=[{'id':'1','title':'Hai đoạn cùng bài','segments':[{'start':1,'end':2.4},{'start':3.1,'end':4.5}]},
                  {'id':'2','title':'Bài thứ hai','segments':[{'start':4.7,'end':5.9}]}]
-        app.av.save_json(job/'bai-hoc.json',{'approved':False,'lessons':lessons})
+        plan={'approved':False,'lessons':[{'id':'bai-1','title':'Một bài học gồm hai video','blocks':[
+            {'type':'video',**lessons[0]},
+            {'type':'activity','id':'thuc-hanh','kind':'practice','instructions':'Thực hành 8 phút rồi xem phần 2',
+             'duration_minutes':8,'next_video':'2','placement':'between_videos'},
+            {'type':'video',**lessons[1]}]}]}
+        app.av.save_json(job/'bai-hoc.json',plan)
         args=SimpleNamespace(duyet=True,rong=0,phu_de='roi',kieu_chu='toi-gian',crf=20,preset='fast',khung=None,muc_dich='bai-hoc')
         app.export(job,args)
+        structure=app.av.load_json(job/'cau-truc-bai-hoc.json')
+        assert len(structure['lessons'])==1
+        blocks=structure['lessons'][0]['blocks']
+        assert [b['type'] for b in blocks]==['video','activity','video']
+        assert blocks[1]['duration_minutes']==8 and all(Path(b['video']).is_file() for b in blocks if b['type']=='video')
         states=app.av.load_json(job/'tien-do.json')
         assert all(s['status']=='done' for s in states.values())
         assert abs(states['1']['duration']-2.8)<.15 and abs(states['2']['duration']-1.2)<.15
@@ -40,7 +50,7 @@ def main():
         assert now['1']['output']!=states['1']['output']
         assert Path(states['1']['output']).exists()
         assert Path(now['2']['output']).stat().st_mtime_ns==mtimes['2']
-        print('SMOKE PASS: real cuts, original frame, sidecar captions, resume and selective recovery.')
+        print('SMOKE PASS: one lesson, two videos, activity between, unchanged cut durations, resume and selective recovery.')
 
 
 if __name__=='__main__':main()

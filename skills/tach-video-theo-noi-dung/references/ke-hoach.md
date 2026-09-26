@@ -1,26 +1,29 @@
-# Bảng chia nội dung
+# Cấu trúc bài học và video
 
-`bai-hoc.json` trong công việc. Ví dụ cấu trúc (các mốc chỉ minh họa):
+Một bài học có thể gồm nhiều video; ghi chú/hoạt động là khối nằm giữa các video trong cùng bài. Ví dụ mốc chỉ minh họa:
+
 ```json
 {
   "approved": false,
   "allow_reuse": false,
-  "lessons": [
-    {
-      "id": "bai-1",
-      "title": "Tên chủ đề theo lời giảng",
-      "summary": "Người xem học được gì; những điểm cần xem lại.",
-      "segments": [
-        {"start": "00:02:00", "end": "00:05:30"},
-        {"start": "00:06:10", "end": "00:08:00"}
-      ]
-    }
-  ]
+  "lessons": [{
+    "id": "bai-1",
+    "title": "Đọc sách và chọn hành động",
+    "blocks": [
+      {"type":"video", "id":"clip-1", "title":"Hướng dẫn đọc", "segments":[{"start":120,"end":150}]},
+      {"type":"activity", "id":"tap-1", "kind":"practice", "instructions":"Đọc 8 phút rồi xem phần 2 bên dưới.", "duration_minutes":8, "duration_basis":"Theo lời giảng", "next_video":"clip-2", "placement":"between_videos", "removed_source":[150,630]},
+      {"type":"video", "id":"clip-2", "title":"Chọn hành động", "segments":[{"start":630,"end":690}]}
+    ]
+  }]
 }
 ```
-Mỗi id duy nhất, chỉ chữ/số/gạch ngang. Dùng giây hoặc HH:MM:SS. Các đoạn một bài tăng dần, không chồng nhau; toàn bộ nằm trong phần đã phiên âm. allow_reuse chỉ bật khi chủ ý dùng lại một đoạn cho nhiều bài. Công cụ kiểm tra mốc, không tự hiểu chủ đề thay AI.
 
-Khi đổi đoạn, tên hoặc tóm tắt, bảng cần duyệt lại. Nếu muốn cả bộ bài học và clip ngắn từ cùng nguồn: lập hai công việc với bảng riêng, dùng phiên âm đã có để tránh gọi API lại. Đối với nguồn toàn buổi từ mốc 0, phien-am.json có thể nhập lại trực tiếp. Với công việc bắt đầu khác 0 phải trừ mốc start trước khi nhập, vì file nhập dùng mốc tương đối.
+Mỗi id bài học và mỗi id khối là duy nhất trong nhóm tương ứng, chỉ chữ/số/gạch ngang. Video có 1–100 segments theo giây hoặc HH:MM:SS; đoạn tăng dần, không chồng nhau và nằm trong phần đã phiên âm. allow_reuse chỉ bật khi chủ ý dùng lại nguồn.
 
-## Ghi chú sau video
-Thêm learning_note (chuỗi hướng dẫn cho học viên) và practice (đối tượng) vào bài trước điểm dừng. practice gồm task, duration_minutes (số phút hoặc null nếu chưa nêu), duration_basis, next_lesson (id), placement="below_video", removed_source=[start,end] và verification. Công cụ giữ dữ liệu trong danh-muc.json/CSV/Markdown và ghi-chu-bai-hoc.json của từng bài; không cần tạo web ở bước sản xuất video. Nội dung ghi chú tham gia chữ ký duyệt, đổi ghi chú cần duyệt lại.
+Hoạt động có thể là practice, open-link hoặc assignment. instructions là lời hướng dẫn cho người học; có thể thêm url, completion_condition, duration_minutes (null nếu không có số phút), removed_source và verification. next_video phải là video phía sau trong cùng bài. Một hoạt động có thể nằm sau video cuối để giao bài tập sau buổi; khi đó không cần next_video. Phần thực hành cần xem liền mạch được giữ trong segments của video.
+
+Không tạo bài học mới chỉ vì tách file video. Đổi mục tiêu học/chủ đề mới là cơ sở tạo bài mới. Bảng cũ chỉ có lessons[].segments vẫn đọc được, được hiểu là mỗi bài có một video.
+
+Công cụ tạo danh-muc.json/CSV theo từng video có lesson_id, lesson_title, part_number và activities_after; cau-truc-bai-hoc.json giữ đủ bài và blocks có thứ tự kèm đường dẫn/status đầu ra để làm web sau này. Thư mục xuất nhóm theo bài, bên trong mỗi video có ghi-chu-bai-hoc.json. Không xây hoặc đăng web trong bước sản xuất video.
+
+Đổi cách nhóm, thứ tự hoặc ghi chú cần duyệt lại, cũng như đổi tên/đoạn/tóm tắt. Nếu muốn cả bộ bài học và clip ngắn, lập hai công việc với bảng riêng, dùng phiên âm đã có. File nhập dùng mốc tương đối: công việc bắt đầu khác 0 phải trừ mốc start trước khi nhập.

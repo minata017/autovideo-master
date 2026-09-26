@@ -52,8 +52,56 @@ def seconds(value):
     return result
 
 
+def plan_videos(plan):
+    """Flatten videos for rendering; keep their lesson and activity associations."""
+    groups = plan.get("lessons", [])
+    if not isinstance(groups, list) or not groups:
+        raise av.VideoError("Chưa có bài trong bảng.")
+    result, group_ids, block_ids = [], set(), set()
+    for group_number, group in enumerate(groups, 1):
+        if "blocks" not in group:
+            result.append(group)
+            continue
+        key, title = str(group.get("id", "")), str(group.get("title", "")).strip()
+        if not re.fullmatch(r"[a-zA-Z0-9-]{1,40}", key) or key in group_ids or not title:
+            raise av.VideoError("Bài học cần id duy nhất và tiêu đề.")
+        group_ids.add(key)
+        blocks = group["blocks"]
+        if not isinstance(blocks, list) or not blocks:
+            raise av.VideoError("Bài học cần danh sách video/hoạt động có thứ tự.")
+        last, number = None, 0
+        for block in blocks:
+            bid = str(block.get("id", ""))
+            if not re.fullmatch(r"[a-zA-Z0-9-]{1,40}", bid) or bid in block_ids:
+                raise av.VideoError("Mỗi video/hoạt động cần id duy nhất.")
+            block_ids.add(bid)
+            if block.get("type") == "video":
+                number += 1
+                last = {**block, "lesson_id": key, "lesson_title": title, "lesson_number": group_number,
+                        "part_number": number, "activities_after": []}
+                result.append(last)
+            elif block.get("type") == "activity":
+                if not str(block.get("instructions", "")).strip():
+                    raise av.VideoError("Hoạt động cần hướng dẫn cho học viên.")
+                duration = block.get("duration_minutes")
+                if duration is not None and seconds(duration) <= 0:
+                    raise av.VideoError("Thời gian thực hành phải lớn hơn 0 hoặc null.")
+                if last is None:
+                    raise av.VideoError("Ghi chú giữa video phải nằm sau một video.")
+                target = block.get("next_video")
+                later = blocks[blocks.index(block)+1:]
+                if target and not any(b.get("type") == "video" and b.get("id") == target for b in later):
+                    raise av.VideoError("Video sau hoạt động phải tồn tại phía sau trong cùng bài.")
+                last["activities_after"].append(block)
+            else:
+                raise av.VideoError("Khối nội dung dùng type video hoặc activity.")
+        if not number:
+            raise av.VideoError("Một bài học cần ít nhất một video.")
+    return result
+
+
 def validate_plan(plan, meta):
-    lessons = plan.get("lessons", [])
+    lessons = plan_videos(plan)
     if not isinstance(lessons, list) or not lessons:
         raise av.VideoError("Chưa có bài. AI cần đọc lời giảng và điền lessons trong bai-hoc.json trước.")
     seen, all_ranges, result = set(), [], []
@@ -81,7 +129,7 @@ def validate_plan(plan, meta):
 
 
 def plan_hash(lessons, plan):
-    return digest({"lessons": lessons, "allow_reuse": plan.get("allow_reuse", False)})
+    return digest({"lessons": lessons, "structure": plan.get("lessons", []), "allow_reuse": plan.get("allow_reuse", False)})
 
 
 def check_source(meta):
@@ -211,7 +259,10 @@ def review(job, frames=True):
     covered = []
     for i, lesson in enumerate(lessons, 1):
         duration = sum(s["end"]-s["start"] for s in lesson["segments"])
-        lines += [f"## {i:02}. {lesson['title']}", f"ID: {lesson['id']} · thời lượng giữ lại: {duration:.2f}s", str(lesson.get("summary", "")), ""]
+        if lesson.get("lesson_id") and lesson.get("part_number") == 1:
+            lines += [f"## Bài {lesson['lesson_number']:02}: {lesson['lesson_title']}", ""]
+        heading = f"### Video {lesson['part_number']}: {lesson['title']}" if lesson.get("lesson_id") else f"## {i:02}. {lesson['title']}"
+        lines += [heading, f"ID video: {lesson['id']} · thời lượng giữ lại: {duration:.2f}s", str(lesson.get("summary", "")), ""]
         if lesson.get("learning_note"):
             lines += ["**Ghi chú dưới video:** " + str(lesson["learning_note"]), ""]
         for part in lesson["segments"]:
@@ -231,6 +282,9 @@ def review(job, frames=True):
                 if not image.is_file() or not image.stat().st_size:
                     raise av.VideoError("Không lấy được hình tại ranh giới bài; xem lại mốc.")
                 lines.append(f"![Mốc {av.stamp(position)}](anh-duyet/{image.name})")
+        for activity in lesson.get("activities_after", []):
+            lines += ["", "**Ghi chú giữa các video trong cùng bài:** " + activity["instructions"],
+                      "Vị trí: dưới video, trước phần tiếp theo; không gắn lên hình.", ""]
         lines.append("")
     # Merge coverage to list precisely the source material excluded by the proposal.
     merged = []
@@ -258,7 +312,7 @@ def review(job, frames=True):
         plan["approved"] = False
         av.save_json(job / "bai-hoc.json", plan)
     (job / "duyet-bai-hoc.md").write_text("\n".join(lines), encoding="utf-8")
-    print(f"{len(lessons)} bài; bảng duyệt: {job / 'duyet-bai-hoc.md'}")
+    print(f"{len(plan['lessons'])} bài / {len(lessons)} video; bảng duyệt: {job / 'duyet-bai-hoc.md'}")
 
 
 def reusable(record, signature):
@@ -296,25 +350,41 @@ def release_lock(handle):
     handle.close()
 
 
-def catalogue(job, lessons, states):
+def catalogue(job, lessons, states, plan=None):
     entries = []
     for i, lesson in enumerate(lessons,1):
         record = states.get(lesson["id"], {})
         entries.append({"number": i, "id": lesson["id"], "title": lesson["title"], "summary": lesson.get("summary", ""),
+                        "lesson_id": lesson.get("lesson_id", lesson["id"]), "lesson_title": lesson.get("lesson_title", lesson["title"]),
+                        "part_number": lesson.get("part_number", 1), "activities_after": lesson.get("activities_after", []),
                         "learning_note": lesson.get("learning_note", ""), "practice": lesson.get("practice"),
                         "status": record.get("status", "pending"), "video": record.get("output", ""),
                         "duration": record.get("duration", ""), "subtitle": record.get("subtitle", ""), "thumbnail": record.get("thumbnail", "")})
     av.save_json(job / "danh-muc.json", entries)
+    if plan and any("blocks" in group for group in plan["lessons"]):
+        lookup = {item["id"]: item for item in entries}
+        groups = []
+        for group in plan["lessons"]:
+            blocks = [({**block, **lookup[block["id"]]} if block.get("type") == "video" else block)
+                      for block in group.get("blocks", [])]
+            if "blocks" not in group:
+                blocks = [{"type":"video", **lookup[group["id"]]}]
+            groups.append({**group, "blocks": blocks})
+        av.save_json(job / "cau-truc-bai-hoc.json", {"lessons": groups})
     with (job / "danh-muc.csv").open("w", encoding="utf-8-sig", newline="") as f:
         writer=csv.DictWriter(f, fieldnames=list(entries[0]))
         writer.writeheader();writer.writerows({k: json.dumps(v, ensure_ascii=False) if isinstance(v, (dict,list)) else v for k,v in entry.items()} for entry in entries)
     text=["# Các bài đã xuất [?]", "", "Kiểm tra chữ, đầu/cuối câu và hình/tiếng trước khi dùng.", ""]
     for item in entries:
-        text.append(f"{item['number']:02}. {item['title']} — {item['status']}")
+        if item["part_number"] == 1:
+            text += [f"## {item['lesson_title']}", ""]
+        text.append(f"Video {item['part_number']}: {item['title']} — {item['status']}")
         if item.get("learning_note"):
             text.append("   Ghi chú dưới video: " + item["learning_note"])
         if item["video"]:
             text.append(f"   [Video]({Path(item['video']).relative_to(job).as_posix()}) · {item['duration']}s")
+        for activity in item["activities_after"]:
+            text += ["", "Ghi chú trước video tiếp theo: " + activity["instructions"], ""]
     (job / "danh-muc.md").write_text("\n".join(text),encoding="utf-8")
 
 
@@ -347,7 +417,10 @@ def export(job, args):
             if reusable(record,signature):
                 print(f"{i}/{len(lessons)}: giữ bài đã kiểm tra {lesson['title']}",flush=True)
                 continue
-            directory=job / "bai-da-xuat" / f"{i:02}-{slug(lesson['title'])}-{signature[:8]}"
+            base=job / "bai-da-xuat"
+            if lesson.get("lesson_id"):
+                base=base / f"{lesson['lesson_id']}-{slug(lesson['lesson_title'])}"
+            directory=base / f"{lesson.get('part_number',i):02}-{slug(lesson['title'])}-{signature[:8]}"
             directory.mkdir(parents=True,exist_ok=True)
             target=directory / "video.mp4"
             # An interrupted unverified final is preserved separately, never trusted by existence alone.
@@ -375,19 +448,20 @@ def export(job, args):
                               subtitle=str(directory / "phu-de.srt"),thumbnail=str(image))
                 record["assets"]={str(p):checksum(p) for p in (directory / "phu-de.srt",directory / "phu-de.ass",image)}
                 av.save_json(directory / "ghi-chu-bai-hoc.json", lesson)
+                record["assets"][str(directory / "ghi-chu-bai-hoc.json")]=checksum(directory / "ghi-chu-bai-hoc.json")
                 mapped=av.remap_words(local_words,[(x-a,y-a) for x,y in ranges])
                 (directory / "noi-dung.txt").write_text(" ".join(w["text"] for w in mapped),encoding="utf-8")
                 (directory / "bai-hoc.md").write_text(f"# {lesson['title']} [?]\n\n{lesson.get('summary','')}\n\nGhi chú dưới video: {lesson.get('learning_note','Không có bài thực hành riêng.')}\n\nNguồn: {source.name}\nCác đoạn gốc: {json.dumps(lesson['segments'],ensure_ascii=False)}\n",encoding="utf-8")
             except (av.VideoError,OSError,ValueError,KeyError) as exc:
                 failed+=1;record.update(status="failed",error=av.clean_error(exc))
                 print(f"Bài lỗi: {lesson['title']} — {record['error']}",file=sys.stderr)
-            av.save_json(state_path,states);catalogue(job,lessons,states)
-        catalogue(job,lessons,states)
+            av.save_json(state_path,states);catalogue(job,lessons,states,plan)
+        catalogue(job,lessons,states,plan)
     finally:
         release_lock(handle)
     if failed:
         raise av.VideoError(f"{failed} bài lỗi; các bài đạt đã giữ. Sửa lỗi rồi chạy lại cùng lệnh.")
-    print(f"Đã xuất/kiểm tra {len(lessons)} bài: {job / 'danh-muc.md'}")
+    print(f"Đã xuất/kiểm tra {len(lessons)} video trong {len(plan['lessons'])} bài: {job / 'danh-muc.md'}")
 
 
 def main():
