@@ -12,6 +12,22 @@ course=importlib.util.module_from_spec(spec);spec.loader.exec_module(course)
 
 
 class CourseTests(unittest.TestCase):
+    def test_practice_notes_survive_catalogue_and_change_approval(self):
+        import json,csv
+        note={'task':'Đọc sách','duration_minutes':8,'next_lesson':'bai-2','placement':'below_video'}
+        lesson={'id':'bai-1','title':'Đọc sách','learning_note':'Đọc 8 phút rồi xem bài 2','practice':note,'segments':[{'start':0,'end':10}]}
+        with tempfile.TemporaryDirectory() as temp:
+            job=Path(temp)
+            course.catalogue(job,[lesson],{})
+            entry=json.loads((job/'danh-muc.json').read_text(encoding='utf-8'))[0]
+            self.assertEqual(entry['practice'],note)
+            with (job/'danh-muc.csv').open(encoding='utf-8-sig',newline='') as f:
+                row=next(csv.DictReader(f))
+            self.assertEqual(json.loads(row['practice']),note)
+            self.assertIn(lesson['learning_note'],(job/'danh-muc.md').read_text(encoding='utf-8'))
+            changed={**lesson,'practice':{**note,'duration_minutes':10}}
+            self.assertNotEqual(course.plan_hash([lesson],{}),course.plan_hash([changed],{}))
+
     def test_absolute_ranges_and_removed_gaps(self):
         ranges=[(120,125),(130,140)]
         cuts=course.complement(ranges,120,140)

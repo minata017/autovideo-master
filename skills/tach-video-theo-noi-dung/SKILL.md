@@ -14,6 +14,12 @@ Dùng cùng `tach-video.py` cho hai mục đích: bài học và clip ngắn. Py
 4. Điền `bai-hoc.json` theo mẫu ở [tham chiếu](references/ke-hoach.md). Chọn chủ đề thật, không bịa ý tác giả. Mốc start/end theo video gốc. Một bài có thể giữ nhiều đoạn; chừa ranh giới câu và hơi thở, giữ câu hỏi đi kèm câu trả lời. Nêu rõ phần bỏ và lý do. Không tự loại ví dụ/hỏi đáp chỉ vì muốn video ngắn.
 5. `xem-ke-hoach --job DIR` tạo bảng và ảnh đầu/giữa/cuối. Xem ảnh, kiểm tra chữ trên tài liệu, chuyển người nói và đầu/cuối câu. Có thể trích thêm khung hình bằng FFmpeg khi mốc chuyển chưa rõ. Đưa bảng cụ thể cho người dùng duyệt [?].
 
+## Điểm dừng thực hành
+- Rà tất cả ranh giới của bảng, không chỉ các mốc người dùng đã chỉ ra. Giữ ví dụ và phản hồi trong cùng bài khi còn chung mạch; đặt lời mời/giới thiệu sát nội dung được dẫn vào.
+- Với bản ghi có bài tập: rút khoảng chờ và tách video trước/sau điểm thực hành. Giữ lời hướng dẫn, lời nhắc có nội dung và phản hồi; nghỉ lấy bút/hơi thở ngắn không tự động thành video riêng.
+- Mỗi điểm thực hành phải có learning_note và practice trong bảng: yêu cầu, thời gian theo lời giảng hoặc làm đến khi xong, bài tiếp theo và khoảng nguồn rút. Mặc định đặt ghi chú dưới video để dùng khi tạo web, không gắn chữ lên hình. Không lấy độ dài khoảng chờ làm số phút bài tập.
+- Phiên âm trống hay câu lặp đáng ngờ không đủ để chốt loại khoảng. Ghi rõ bằng chứng/độ chắc chắn, kiểm tra âm thanh và hình tại khoảng chờ trước khi chốt xuất.
+
 ## Xuất và kiểm tra
 - Khi bảng đã duyệt: `xuat --job DIR --duyet --muc-dich bai-hoc` hoặc `--muc-dich clip-ngan`.
 - Bài học mặc định giữ tỷ lệ/kích thước gốc, phụ đề rời. Clip ngắn mặc định 9:16 crop giữa; xem hình trước vì chưa có theo dõi khuôn mặt/tài liệu. Dùng `--khung goc` khi crop mất nội dung. `--phu-de gan` gắn chữ lên hình nếu phù hợp, `--phu-de roi` giữ hình sạch.

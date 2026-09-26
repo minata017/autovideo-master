@@ -212,6 +212,8 @@ def review(job, frames=True):
     for i, lesson in enumerate(lessons, 1):
         duration = sum(s["end"]-s["start"] for s in lesson["segments"])
         lines += [f"## {i:02}. {lesson['title']}", f"ID: {lesson['id']} · thời lượng giữ lại: {duration:.2f}s", str(lesson.get("summary", "")), ""]
+        if lesson.get("learning_note"):
+            lines += ["**Ghi chú dưới video:** " + str(lesson["learning_note"]), ""]
         for part in lesson["segments"]:
             a, b = part["start"], part["end"]
             covered.append((a,b))
@@ -299,15 +301,18 @@ def catalogue(job, lessons, states):
     for i, lesson in enumerate(lessons,1):
         record = states.get(lesson["id"], {})
         entries.append({"number": i, "id": lesson["id"], "title": lesson["title"], "summary": lesson.get("summary", ""),
+                        "learning_note": lesson.get("learning_note", ""), "practice": lesson.get("practice"),
                         "status": record.get("status", "pending"), "video": record.get("output", ""),
                         "duration": record.get("duration", ""), "subtitle": record.get("subtitle", ""), "thumbnail": record.get("thumbnail", "")})
     av.save_json(job / "danh-muc.json", entries)
     with (job / "danh-muc.csv").open("w", encoding="utf-8-sig", newline="") as f:
         writer=csv.DictWriter(f, fieldnames=list(entries[0]))
-        writer.writeheader();writer.writerows(entries)
+        writer.writeheader();writer.writerows({k: json.dumps(v, ensure_ascii=False) if isinstance(v, (dict,list)) else v for k,v in entry.items()} for entry in entries)
     text=["# Các bài đã xuất [?]", "", "Kiểm tra chữ, đầu/cuối câu và hình/tiếng trước khi dùng.", ""]
     for item in entries:
         text.append(f"{item['number']:02}. {item['title']} — {item['status']}")
+        if item.get("learning_note"):
+            text.append("   Ghi chú dưới video: " + item["learning_note"])
         if item["video"]:
             text.append(f"   [Video]({Path(item['video']).relative_to(job).as_posix()}) · {item['duration']}s")
     (job / "danh-muc.md").write_text("\n".join(text),encoding="utf-8")
@@ -369,9 +374,10 @@ def export(job, args):
                 record.update(status="done",sha256=checksum(target),duration=result["measured_duration"],
                               subtitle=str(directory / "phu-de.srt"),thumbnail=str(image))
                 record["assets"]={str(p):checksum(p) for p in (directory / "phu-de.srt",directory / "phu-de.ass",image)}
+                av.save_json(directory / "ghi-chu-bai-hoc.json", lesson)
                 mapped=av.remap_words(local_words,[(x-a,y-a) for x,y in ranges])
                 (directory / "noi-dung.txt").write_text(" ".join(w["text"] for w in mapped),encoding="utf-8")
-                (directory / "bai-hoc.md").write_text(f"# {lesson['title']} [?]\n\n{lesson.get('summary','')}\n\nNguồn: {source.name}\nCác đoạn gốc: {json.dumps(lesson['segments'],ensure_ascii=False)}\n",encoding="utf-8")
+                (directory / "bai-hoc.md").write_text(f"# {lesson['title']} [?]\n\n{lesson.get('summary','')}\n\nGhi chú dưới video: {lesson.get('learning_note','Không có bài thực hành riêng.')}\n\nNguồn: {source.name}\nCác đoạn gốc: {json.dumps(lesson['segments'],ensure_ascii=False)}\n",encoding="utf-8")
             except (av.VideoError,OSError,ValueError,KeyError) as exc:
                 failed+=1;record.update(status="failed",error=av.clean_error(exc))
                 print(f"Bài lỗi: {lesson['title']} — {record['error']}",file=sys.stderr)
