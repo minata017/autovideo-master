@@ -1,81 +1,54 @@
 # autovideo-master
 
-Bộ công cụ dựng và biên tập video tự động bằng AI, hoạt động độc lập và điều khiển 100% bằng câu lệnh tiếng Việt tự nhiên trong chat. Tương thích toàn bộ các trợ lý AI (Codex, Antigravity, Claude, Cursor, Windsurf).
+Bộ công cụ tạo và sửa video qua một lệnh Python, AI điều phối bằng 5 skill. Bản kiểm thử 26/09/2026 [?].
 
----
-
-## 🚀 Cài đặt tự động 1 dòng lệnh
-
-### Dành cho Windows (PowerShell):
+## Cài trên Windows
+Chạy trong PowerShell tại thư mục dự án:
 ```powershell
-irm https://raw.githubusercontent.com/minata017/autovideo-master/main/cai-dat.ps1 | iex
+powershell -NoProfile -ExecutionPolicy Bypass -File .\cai-dat.ps1
 ```
+Nhập khóa vào `.env` trên máy; không dán khóa vào chat. Installer giữ `.env` và dữ liệu đang có, tạo môi trường Python riêng. Không cần Node hay script khóa học.
 
-### Dành cho macOS / Linux (Terminal):
-```bash
-curl -fsSL https://raw.githubusercontent.com/minata017/autovideo-master/main/cai-dat.sh | bash
+## Tạo video từ chữ
+```powershell
+.\.venv\Scripts\python.exe autovideo.py tao --kich-ban input\kich-ban-mau.txt --pixabay --khung 9:16
 ```
-
-> **Lưu ý:** Script cài đặt sẽ tự động tải 21 script xử lý video từ kho gốc của tác giả `sontyphu` (do giấy phép khóa học, repo này không đóng gói lại). Cần kết nối mạng khi cài lần đầu.
-
----
-
-## ⚙️ Cấu hình ban đầu
-
-1. Sau khi cài đặt, mở file `.env` tại thư mục gốc:
-```bash
-GROQ_API_KEY=your_groq_api_key_here
+Lệnh in thư mục công việc mới trong `output/`. Mở `duyet-canh.md`, đọc 3 cảnh đề xuất mỗi đoạn. Trong `canh.json`, sao chép đối tượng ứng viên muốn dùng vào `selected`; để null khi không chèn cảnh. Có thể dùng ảnh/video cục bộ qua `selected: {"file": "D:/duong-dan/anh.jpg"}`. AI phải xem nội dung và chọn cảnh theo câu, không chỉ dựa vào thứ tự kết quả.
+```powershell
+.\.venv\Scripts\python.exe autovideo.py xuat --job "output/THU-MUC-CONG-VIEC" --duyet --kieu-chu vang-den
 ```
-*(Lấy mã khóa Groq miễn phí tại [console.groq.com/keys](https://console.groq.com/keys) để bóc giọng nói siêu tốc trong 3-5 giây)*
+`--duyet` xác nhận các cảnh đã chọn. Chỉ cảnh được chọn mới được tải. Cảnh dùng lại được lưu tạm; không đóng gói video Pixabay gốc vào Git.
 
-2. Tùy chọn nâng cao:
-   - `ELEVENLABS_API_KEY`: Dành cho giọng đọc thuyết minh có phí cao cấp.
-   - `PEXELS_API_KEY`: Dành cho tìm kiếm video B-roll tự động miễn phí.
-
----
-
-## 📂 Cấu trúc thư mục
-
-```text
-autovideo-master/
-├── .env.example              # Mẫu cấu hình API
-├── .env                      # File cấu hình cục bộ (chặn đưa lên Git)
-├── .gitignore                # Bảo vệ an toàn mã khóa và dữ liệu
-├── README.md                 # Hướng dẫn sử dụng
-├── CREDITS.md                # Ghi công bản quyền nguồn mở (MIT, OFL, CC)
-├── cai-dat.ps1               # Cài đặt tự động cho Windows
-├── cai-dat.sh                # Cài đặt tự động cho macOS/Linux
-├── CLAUDE.md                 # Nhạc trưởng cho Claude Code / Claude Desktop
-├── AGENTS.md                 # Nhạc trưởng cho Codex, Antigravity, Cursor
-├── bin/                      # Chứa FFmpeg độc lập
-├── input/                    # Nơi thả video thô hoặc kịch bản
-├── output/                   # Nơi nhận video thành phẩm (9:16 hoặc 16:9)
-├── temp/                     # Thư mục xử lý tạm thời
-└── skills/                   # 4 skill nghiệp vụ
-    ├── autovideo-toolkit/    # Bóc lời Groq LPU, cắt "ờ à", jump-cut, nén CRF 20
-    ├── kho-am-thanh/         # 63 SFX phân loại + 7 BGM Piano YouTube Audio Library
-    ├── tao-kieu-chu-caption/ # 10 Font việt hóa OFL + 5 mẫu phụ đề nhảy chữ
-    └── dung-broll-collage/   # Dựng cảnh B-roll ảnh chuyển động HyperFrames
+## Sửa video thật
+Lệnh sau gửi riêng âm thanh đoạn được chỉ định lên Groq. AI phải có sự đồng ý của chủ video trước khi gửi nội dung riêng tư.
+```powershell
+.\.venv\Scripts\python.exe autovideo.py sua --video "D:/video.mp4" --tu 120 --do-dai 45
 ```
+Xem `transcript.json`, sửa `words[].text` trong `job.json` nếu nhận sai; xem `diem-cat.json`, bật/tắt từng điểm cắt. Không tự bỏ các từ có thể mang nghĩa như “à”, “ừ”.
+```powershell
+.\.venv\Scripts\python.exe autovideo.py xuat --job "output/THU-MUC-CONG-VIEC" --duyet-cat
+```
+Muốn chèn B-roll vào video đã cắt: đặt `approved=true` trong `diem-cat.json`, chạy lần lượt `chuan-bi-canh --job ...`, `broll --job ...`, chọn cảnh rồi `xuat --job ... --duyet`. Thay điểm cắt phải tạo lại cảnh, kể cả khi tổng thời lượng không đổi.
 
----
+## Phụ đề, ảnh và âm thanh
+- 6 kiểu chữ: vang-den, trang-den, toi-gian, nen-den, karaoke, shorts. ASS hỗ trợ dấu tiếng Việt, mốc từng từ và xuống dòng ngắn.
+- Ảnh cục bộ có chuyển động zoom nhẹ; video được căn theo thời gian giọng đọc, cắt/crop về khung 9:16 hoặc 16:9, tắt tiếng B-roll.
+- Nhạc: `xuat ... --nhac "D:/nhac-co-quyen-dung.mp3"`; nhạc giảm âm lượng khi có giọng đọc.
+- SFX: `--sfx input/sfx.json`, nội dung mẫu `[{"file":"D:/ting.wav","at":2.5,"volume":0.25}]`. Chỉ dùng âm thanh có quyền sử dụng đã xác nhận.
+- `xuat` mã hóa H.264 CRF 20 một lần ở bước cuối, AAC, faststart. CRF có mất dữ liệu; không hứa tỷ lệ giảm dung lượng cố định. `nen` chỉ dành cho video có sẵn cần nén riêng.
+- Không ghi đè thành phẩm; mỗi việc có thư mục riêng. `ket-qua.json` ghi thời lượng đo thực tế, phụ đề cuối và nguồn cảnh.
 
-## 🎬 Cách sử dụng
+## Kiểm tra
+```powershell
+.\.venv\Scripts\python.exe autovideo.py kiem-tra
+.\.venv\Scripts\python.exe tests/test-timeline.py
+```
+Kiểm thử thực tế 26/09/2026: kịch bản + Edge-TTS + 5 cảnh Pixabay, giọng 23.376s, video 23.367s, audio 23.376s; bài giảng thật đoạn 02:00–02:45, 141 từ, bỏ hai khoảng lặng còn video 43.000s / audio 42.990s. Đây là bản thử kỹ thuật chờ anh Lộc duyệt nội dung. Xem thêm `bao-cao-kiem-thu.md`.
 
-### 1. Sửa video người nói thô
-1. Thả video vào `input/`.
-2. Mở trợ lý AI (Claude, Antigravity, Codex) và ra lệnh:
-   > *"Cắt lọc các đoạn ờ à, thêm phụ đề vàng đen và xuất video giúp anh"*
-3. Nhận video thành phẩm đã được cắt sạch và tự động nén nét cao tại `output/`.
+## Giới hạn đã biết
+Giọng Edge-TTS và Groq/Pixabay cần mạng, chịu hạn mức và điều khoản dịch vụ; không cam kết 0 đồng vĩnh viễn. Chưa tích hợp ElevenLabs, Pexels, phiên âm offline hay dựng collage nhiều lớp bằng HyperFrames. Bộ cốt lõi hiện dùng FFmpeg. Từ khóa và cảnh cần AI/người dùng kiểm tra theo nội dung. Chưa kiểm thử xuất video native macOS/Linux và chưa thử toàn bộ bài giảng 102 phút.
 
-### 2. Tạo video từ kịch bản chữ
-1. Thả file kịch bản `.txt` vào `input/` hoặc dán trực tiếp vào chat:
-   > *"Tạo video ngắn 9:16 từ kịch bản này với giọng đọc truyền cảm"*
-2. AI tự động lồng tiếng (Edge-TTS 0đ / ElevenLabs), ghép ảnh B-roll và dập chữ phụ đề.
-3. Nhận video thành phẩm tại `output/`.
+## Quyền sử dụng
+Xem `NOTICE.md` và `CREDITS.md`. Script khóa học còn trong lịch sử Git, chưa có xác nhận quyền; không khôi phục, tự tải hoặc phân phối. 63 SFX và 7 BGM cũ giữ local, bỏ qua khi dựng mặc định. Không xóa lịch sử Git khi chưa có chỉ thị riêng.
 
----
-
-## 🔒 Bản quyền & Giấy phép
-
-Toàn bộ các thành phần nguồn mở đi kèm được ghi nhận đầy đủ theo điều khoản giấy phép tại [CREDITS.md](CREDITS.md).
+Collage chia ô 2–4 ảnh/video: trong selected dùng files là danh sách đường dẫn local. Đã thử lưới 3 ảnh, giữ thời lượng video/audio 23.367s/23.376s. Hiệu ứng collage này dùng FFmpeg, không phải HyperFrames.

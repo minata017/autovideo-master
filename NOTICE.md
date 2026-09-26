@@ -18,3 +18,6 @@ Không sử dụng, phân phối lại hoặc khôi phục các scripts từ com
 ## Kiểu chữ (Fonts)
 
 6 bộ font đi kèm đều có giấy phép SIL OFL 1.1 hoặc Apache 2.0 — đã xác minh, an toàn sử dụng và phân phối.
+
+## Bản vận hành mới 26/09/2026
+Mã cốt lõi mới không phụ thuộc script khóa học, không tự tải chúng khi cài. Giữ nguyên lịch sử Git đang có để chờ quyết định riêng; không tuyên bố đã xóa sạch mã cũ khỏi lịch sử. Các tài nguyên cục bộ chưa xác minh không được dùng mặc định.

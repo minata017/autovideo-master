@@ -56,3 +56,6 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# New independent edit entry
+!skills/autovideo-toolkit/scripts/sua-video-tho.py
