@@ -28,7 +28,7 @@ if ($scriptPath -and (Test-Path (Join-Path (Split-Path -Parent $scriptPath) "AGE
     Write-Host "[0] Phat hien ban da clone repo san tai: $appDir" -ForegroundColor Cyan
 } else {
     # Chay qua irm | iex hoac khong phai tu trong repo
-    $defaultDir = "D:\autovideo-master"
+    $defaultDir = Join-Path $HOME "autovideo-master"
     Write-Host "[0] Ban dang cai tu dau. Repo se duoc clone vao: $defaultDir" -ForegroundColor Yellow
 
     if (Test-Path $defaultDir) {
@@ -125,7 +125,12 @@ if (-not $ffmpegCmd) {
         try {
             Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile $zipPath
             Expand-Archive -Path $zipPath -DestinationPath "$env:LOCALAPPDATA\ffmpeg" -Force
-            $binDir = (Get-ChildItem "$env:LOCALAPPDATA\ffmpeg\ffmpeg-*\bin" -Directory | Select-Object -First 1).FullName
+            $binDirNode = Get-ChildItem "$env:LOCALAPPDATA\ffmpeg\ffmpeg-*\bin" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($binDirNode) { $binDir = $binDirNode.FullName }
+            else {
+                $foundBin = Get-ChildItem "$env:LOCALAPPDATA\ffmpeg" -Recurse -Filter "ffmpeg.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($foundBin) { $binDir = $foundBin.DirectoryName }
+            }
             [Environment]::SetEnvironmentVariable("PATH", "$([Environment]::GetEnvironmentVariable('PATH','User'));$binDir", "User")
             $env:PATH = "$binDir;$env:PATH"
             Write-Host "  + FFmpeg da cai xong va them vao PATH!"

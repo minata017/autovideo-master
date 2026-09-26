@@ -19,6 +19,10 @@ input/*
 # Thu muc clone tam thoi khi setup
 temp_clone/
 
+# Am thanh chua xac minh giay phep - giu local, khong phan phoi
+skills/kho-am-thanh/sfx/
+skills/kho-am-thanh/bgm/
+
 # Scripts tai tu kho goc khi cai dat (khong dong goi do giay phep khoa hoc)
 skills/autovideo-toolkit/scripts/*.py
 !skills/autovideo-toolkit/scripts/nen-video.py
