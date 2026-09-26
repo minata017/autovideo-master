@@ -178,13 +178,22 @@ def tao_video_nen(duration, output_path, width=1080, height=1920):
 
 
 def ghep_broll_thanh_video(broll_dir, cau_list, duration, output_path, width, height):
-    """Ghep cac clip B-roll thanh 1 video lien mach theo moc thoi gian.
+    """Ghep cac clip B-roll thanh 1 video lien mach phu toan bo audio.
 
-    Neu thieu clip cho 1 doan -> dung nen mau.
+    - Them padding dau (0 -> cau dau tien)
+    - Them padding cuoi (cau cuoi -> het audio + 1s)
+    - Neu thieu clip cho 1 doan -> dung nen mau
     """
-    # Tao concat list
     concat_list = []
     temp_dir = Path(broll_dir).parent
+    target_dur = duration + 1.0  # Video dai hon audio 1s de dam bao khong bi cat
+
+    # Padding dau: tu 0 den cau dau tien
+    first_start = cau_list[0]["start"] if cau_list else 0
+    if first_start > 0.05:
+        pad_file = temp_dir / "nen-pad-dau.mp4"
+        tao_video_nen(first_start + 0.1, pad_file, width, height)
+        concat_list.append(str(pad_file))
 
     for i, cau in enumerate(cau_list):
         broll_file = Path(broll_dir) / f"broll-{i+1}.mp4"
@@ -193,35 +202,52 @@ def ghep_broll_thanh_video(broll_dir, cau_list, duration, output_path, width, he
         if broll_file.exists():
             concat_list.append(str(broll_file))
         else:
-            # Tao nen mau cho doan nay
             seg_file = temp_dir / f"nen-seg-{i+1}.mp4"
-            tao_video_nen(segment_dur + 0.5, seg_file, width, height)
+            tao_video_nen(segment_dur + 0.1, seg_file, width, height)
             concat_list.append(str(seg_file))
 
+    # Padding cuoi: tu cau cuoi den het audio
+    last_end = cau_list[-1]["end"] if cau_list else 0
+    remaining = target_dur - last_end
+    if remaining > 0.1:
+        pad_file = temp_dir / "nen-pad-cuoi.mp4"
+        tao_video_nen(remaining + 0.5, pad_file, width, height)
+        concat_list.append(str(pad_file))
+
     if not concat_list:
-        tao_video_nen(duration + 1, output_path, width, height)
+        tao_video_nen(target_dur, output_path, width, height)
         return
 
-    # Tao file concat
-    concat_txt = temp_dir / "concat-broll.txt"
-    with open(concat_txt, "w", encoding="utf-8") as f:
-        for p in concat_list:
-            safe = str(p).replace("\\", "/").replace("'", "'\\''")
-            f.write(f"file '{safe}'\n")
+    # Dung concat FILTER (khong phai demuxer) vi cac clip co fps khac nhau
+    # (25, 30, 23.976...) - demuxer khong re-encode nen bi lech timestamp
+    n = len(concat_list)
+    inputs = []
+    filter_parts = []
+    for i, p in enumerate(concat_list):
+        inputs.extend(["-i", str(p)])
+        # Chuan hoa moi clip ve 30fps, 1080x{height} truoc khi concat
+        filter_parts.append(
+            f"[{i}:v]fps=30,scale={width}:{height}:force_original_aspect_ratio=decrease,"
+            f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1[v{i}]"
+        )
+
+    concat_inputs = "".join(f"[v{i}]" for i in range(n))
+    filter_str = ";".join(filter_parts) + f";{concat_inputs}concat=n={n}:v=1:a=0[vout]"
 
     cmd = [
         FFMPEG, "-y",
-        "-f", "concat", "-safe", "0",
-        "-i", str(concat_txt),
+        *inputs,
+        "-filter_complex", filter_str,
+        "-map", "[vout]",
         "-c:v", "libx264", "-crf", "23", "-preset", "fast",
         "-pix_fmt", "yuv420p",
-        "-t", str(round(duration + 0.5, 2)),
         str(output_path)
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"[autovideo] LOI ghep B-roll, dung nen mau thay the")
-        tao_video_nen(duration + 1, output_path, width, height)
+        print(f"[autovideo] LOI ghep B-roll: {result.stderr[-300:]}")
+        print(f"[autovideo] Dung nen mau thay the")
+        tao_video_nen(target_dur, output_path, width, height)
 
 
 def ghep_thanh_pham(video, audio, srt_file, output, khung):
@@ -245,7 +271,6 @@ def ghep_thanh_pham(video, audio, srt_file, output, khung):
         "-c:v", "libx264", "-crf", "20", "-preset", "slow",
         "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
-        "-shortest",
         str(output)
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -256,7 +281,7 @@ def ghep_thanh_pham(video, audio, srt_file, output, khung):
             "-i", str(video), "-i", str(audio),
             "-c:v", "libx264", "-crf", "20", "-preset", "slow",
             "-c:a", "aac", "-b:a", "128k",
-            "-movflags", "+faststart", "-shortest",
+            "-movflags", "+faststart",
             str(output)
         ]
         subprocess.run(cmd2, capture_output=True, text=True)
@@ -413,15 +438,47 @@ async def main():
     # === Bao cao ===
     if output_file.exists():
         size_mb = output_file.stat().st_size / (1024 * 1024)
+
+        # Do thong so that bang ffprobe
+        video_dur = lay_do_dai(output_file)
+        audio_dur = lay_do_dai(audio_file)
+
         print(f"\n{'=' * 60}")
         print(f"  HOAN TAT!")
         print(f"  Video: {output_file}")
         print(f"  Dung luong: {size_mb:.2f} MB")
-        print(f"  Do dai: {duration:.1f} giay")
+        print(f"  Do dai video (ffprobe): {video_dur:.3f} giay")
+        print(f"  Do dai audio (ffprobe): {audio_dur:.3f} giay")
+        if video_dur < audio_dur - 0.1:
+            print(f"  !! LOI: video ngan hon audio {audio_dur - video_dur:.3f}s - giong doc bi cat!")
         print(f"  Khung hinh: {args.khung} ({width}x{height})")
-        print(f"  Phu de: can chinh theo giong doc (word-level)")
+        print(f"  Phu de: {len(Path(srt_file).read_text(encoding='utf-8').strip().split(chr(10) + chr(10)))} dong (gom 4-5 tu/dong)")
         print(f"  B-roll: {'Pixabay' if co_broll else 'Nen mau (chua co API key)'}")
         print(f"{'=' * 60}")
+
+        # Bang canh B-roll de nguoi dung duyet
+        if co_broll:
+            de_xuat_file = temp_dir / "broll-de-xuat.json"
+            if de_xuat_file.exists():
+                with open(de_xuat_file, "r", encoding="utf-8") as f:
+                    de_xuat = json.load(f)
+                print(f"\n{'=' * 60}")
+                print(f"  BANG CANH B-ROLL (de duyet do phu hop)")
+                print(f"{'=' * 60}")
+                print(f"  {'STT':>3} | {'Thoi gian':>12} | {'Keyword':>25} | {'Pixabay':>10} | Loi thoai")
+                print(f"  {'---':>3} | {'----------':>12} | {'-------':>25} | {'-------':>10} | --------")
+                for dx in de_xuat:
+                    stt = dx.get("stt", "?")
+                    start = dx.get("start", 0)
+                    end = dx.get("end", 0)
+                    keyword = dx.get("keyword", "?")[:25]
+                    pid = dx.get("pixabay_id", "KHONG CO")
+                    cau_text = dx.get("cau", "")[:45]
+                    page = dx.get("page_url", "")
+                    print(f"  {stt:>3} | {start:>5.1f}-{end:>5.1f}s | {keyword:>25} | {'#'+str(pid) if pid else 'KHONG CO':>10} | {cau_text}")
+                    if page:
+                        print(f"      |              |                           |            | {page}")
+                print(f"{'=' * 60}")
     else:
         print("[autovideo] LOI: Khong tao duoc video!", file=sys.stderr)
         sys.exit(1)
