@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+main() {
 task_script_dir=""
 if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
   task_script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,10 +27,23 @@ if ! command -v uv >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 if [[ ! -x "$task_app_dir/.venv/bin/python" ]]; then
-  uv venv --python 3.13 "$task_app_dir/.venv"
+  uv venv --managed-python --python 3.13 "$task_app_dir/.venv"
 fi
 uv pip install --python "$task_app_dir/.venv/bin/python" -r "$task_app_dir/requirements.txt"
 if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+  if [[ "$(uname -s)" == Darwin ]] && ! command -v brew >/dev/null 2>&1; then
+    for task_brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+      if [[ -x "$task_brew" ]]; then export PATH="$(dirname "$task_brew"):$PATH"; break; fi
+    done
+    if ! command -v brew >/dev/null 2>&1; then
+      task_brew_installer="$(mktemp)"
+      curl -fsSL 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh' -o "$task_brew_installer"
+      /bin/bash "$task_brew_installer"
+      for task_brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        if [[ -x "$task_brew" ]]; then export PATH="$(dirname "$task_brew"):$PATH"; break; fi
+      done
+    fi
+  fi
   if command -v brew >/dev/null 2>&1; then
     brew install ffmpeg
   elif command -v apt-get >/dev/null 2>&1; then
@@ -44,3 +58,6 @@ fi
 "$task_app_dir/.venv/bin/python" "$task_app_dir/autovideo.py" kiem-tra
 printf 'Installed and checked: %s\n' "$task_app_dir"
 printf 'Enter API keys in .env. Native macOS/Linux rendering requires verification on that platform.\n'
+printf 'Open this folder in your AI coding app and read huong-dan-su-dung-ai.md.\n'
+}
+main "$@"

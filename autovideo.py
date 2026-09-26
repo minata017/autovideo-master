@@ -58,7 +58,9 @@ def clean_error(value):
 def save_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary = path.with_name(path.name + "." + uuid.uuid4().hex[:8] + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
 
 
 def load_json(path):
@@ -351,24 +353,46 @@ def groq_transcribe(audio, job, duration):
     key = config().get("GROQ_API_KEY", "")
     if not key or "your_" in key:
         raise VideoError("Chưa có GROQ_API_KEY trong .env.")
+    audio = Path(audio)
+    audio_hash = hashlib.sha256()
+    with audio.open("rb") as audio_file:
+        for block in iter(lambda: audio_file.read(1024 * 1024), b""):
+            audio_hash.update(block)
+    identity = hashlib.sha256(f"{audio_hash.hexdigest()}:{duration}:whisper-large-v3-turbo".encode()).hexdigest()
     words, segments = [], []
     for index, start in enumerate(range(0, math.ceil(duration), 600)):
         chunk = job / f"groq-{index}.flac"
-        run([tool("ffmpeg"), "-v", "error", "-y", "-ss", start, "-i", audio, "-t", min(601, duration - start),
-             "-vn", "-ac", 1, "-ar", 16000, "-c:a", "flac", chunk])
-        if chunk.stat().st_size > 25 * 1024 * 1024:
-            raise VideoError("Đoạn audio vượt giới hạn 25 MB; cần chia nhỏ hơn.")
-        with chunk.open("rb") as f:
-            try:
-                response = requests.post("https://api.groq.com/openai/v1/audio/transcriptions",
-                    headers={"Authorization": f"Bearer {key}"}, files={"file": (chunk.name, f, "audio/flac")},
-                    data=[("model", "whisper-large-v3-turbo"), ("language", "vi"), ("response_format", "verbose_json"),
-                          ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment")], timeout=120)
-            except requests.RequestException:
-                raise VideoError("Lỗi mạng khi phiên âm Groq.") from None
-        if response.status_code != 200:
-            raise VideoError(f"Groq lỗi HTTP {response.status_code}; kiểm tra khóa, hạn mức hoặc thử lại sau.")
-        data = response.json()
+        cache = job / f"groq-{index}.json"
+        cached = load_json(cache) if cache.exists() else {}
+        data = cached.get("response") if cached.get("identity") == identity else None
+        if data is None:
+            run([tool("ffmpeg"), "-v", "error", "-y", "-ss", start, "-i", audio, "-t", min(601, duration - start),
+                 "-vn", "-ac", 1, "-ar", 16000, "-c:a", "flac", chunk])
+            if chunk.stat().st_size > 25 * 1024 * 1024:
+                raise VideoError("Đoạn audio vượt giới hạn 25 MB; cần chia nhỏ hơn.")
+            for attempt in range(3):
+                try:
+                    with chunk.open("rb") as f:
+                        response = requests.post("https://api.groq.com/openai/v1/audio/transcriptions",
+                            headers={"Authorization": f"Bearer {key}"}, files={"file": (chunk.name, f, "audio/flac")},
+                            data=[("model", "whisper-large-v3-turbo"), ("language", "vi"), ("response_format", "verbose_json"),
+                                  ("timestamp_granularities[]", "word"), ("timestamp_granularities[]", "segment")], timeout=120)
+                except requests.RequestException:
+                    if attempt == 2:
+                        raise VideoError("Lỗi mạng Groq; kết quả các phần trước đã lưu. Chạy lại cùng công việc để tiếp tục.") from None
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+                if response.status_code == 200:
+                    data = response.json()
+                    if not isinstance(data.get("words"), list):
+                        raise VideoError("Groq trả dữ liệu thiếu mốc từng từ; chưa lưu phần này.")
+                    save_json(cache, {"identity": identity, "response": data})
+                    break
+                if response.status_code not in (429, 500, 502, 503, 504) or attempt == 2:
+                    raise VideoError(f"Groq lỗi HTTP {response.status_code}; các phần trước đã lưu. Kiểm tra khóa/hạn mức rồi chạy lại.")
+                time.sleep(2 ** (attempt + 1))
+        print(f"Phiên âm: phần {index + 1}/{math.ceil(duration / 600)} đã có kết quả.", flush=True)
+        save_json(job / "phien-am-trang-thai.json", {"identity": identity, "completed_chunks": index + 1, "total_chunks": math.ceil(duration / 600)})
         boundary = min(duration, start + 600)
         for w in data.get("words", []):
             if start + float(w["start"]) >= boundary:
@@ -483,7 +507,7 @@ def render(job, args):
         keep = keep_ranges(cuts, meta["duration"])
         words = remap_words(words, keep)
         duration = sum(b - a for a, b in keep)
-        inputs += ["-i", str(source)]
+        inputs += (["-ss", str(meta["source_start"])] if meta.get("source_start") else []) + ["-i", str(source)]
         n = len(keep)
         if n > 200:
             raise VideoError("Quá 200 đoạn cắt trong một lượt; chia video thành phần nhỏ hơn.")
@@ -565,7 +589,10 @@ def render(job, args):
         sources.append({"scene": s["id"], "start": start, "end": end, "selected": s["selected"], "file": str(path)})
     groups = write_captions(job, words, duration, width, height, args.kieu_chu)
     fontdir = ROOT / "skills" / "tao-kieu-chu-caption" / "fonts"
-    filters.append(f"[{vlabel}]subtitles=filename='{filter_path(job/'phu-de.ass')}':fontsdir='{filter_path(fontdir)}',format=yuv420p[vout]")
+    if getattr(args, "phu_de_roi", False):
+        filters.append(f"[{vlabel}]format=yuv420p[vout]")
+    else:
+        filters.append(f"[{vlabel}]subtitles=filename='{filter_path(job/'phu-de.ass')}':fontsdir='{filter_path(fontdir)}',format=yuv420p[vout]")
     alabel = "abase"
     if args.nhac:
         music = Path(args.nhac).expanduser().resolve()
@@ -610,7 +637,7 @@ def render(job, args):
            "-c:v", "libx264", "-crf", str(args.crf), "-preset", args.preset, "-threads", "4",
            "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(partial)]
     print("Đang dựng video…", flush=True)
-    run(cmd)
+    run(cmd, timeout=max(1800, duration * 10))
     info = probe(partial)
     video_end = float(info["video"].get("duration", info["duration"]))
     audio_end = float(info["audio"].get("duration", info["duration"])) if info["audio"] else 0
@@ -621,7 +648,7 @@ def render(job, args):
     report = {"output": str(final), "expected_duration": duration, "measured_duration": info["duration"],
               "video_duration": video_end, "audio_duration": audio_end, "last_caption_end": last_caption,
               "size_mb": round(info["size"]/1048576, 2), "width": width, "height": height,
-              "caption_groups": len(groups), "broll_count": len(sources), "sources": sources,
+              "caption_groups": len(groups), "burned_captions": not getattr(args, "phu_de_roi", False), "broll_count": len(sources), "sources": sources,
               "quality": "CRF là nén có mất dữ liệu; xem lại hình, tiếng và nội dung trước khi sử dụng."}
     save_json(job / "ket-qua.json", report)
     print(json.dumps(report, ensure_ascii=False, indent=2))

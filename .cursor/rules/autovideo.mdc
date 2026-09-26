@@ -1,0 +1,5 @@
+---
+description: Điều phối sản xuất video bằng bộ công cụ trong dự án
+alwaysApply: true
+---
+Đọc AGENTS.md và README.md. Khi tách video dài theo nội dung, đọc skills/tach-video-theo-noi-dung/SKILL.md. Dùng .venv của dự án; xem và duyệt bảng đoạn trước xuất hàng loạt. Giữ API key cục bộ và video gốc.

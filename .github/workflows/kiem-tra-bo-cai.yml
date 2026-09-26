@@ -1,0 +1,44 @@
+name: Windows and macOS video toolchain
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Windows runtime
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./cai-dat.ps1
+      - name: Install macOS runtime
+        if: runner.os == 'macOS'
+        shell: bash
+        run: bash ./cai-dat.sh
+      - name: Test real batch and recovery on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        env:
+          PYTHONUTF8: '1'
+        run: |
+          & ./.venv/Scripts/python.exe ./tests/test-timeline.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./.venv/Scripts/python.exe ./tests/test-course.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./.venv/Scripts/python.exe ./tests/smoke-course.py
+          exit $LASTEXITCODE
+      - name: Test real batch and recovery on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          ./.venv/bin/python ./tests/test-timeline.py
+          ./.venv/bin/python ./tests/test-course.py
+          ./.venv/bin/python ./tests/smoke-course.py

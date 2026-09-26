@@ -60,7 +60,7 @@ if ($Uv) { $UvPath = $Uv.Source } else {
 }
 if (-not (Test-Path -LiteralPath $UvPath)) { throw 'uv was not installed successfully.' }
 if (-not (Test-Path -LiteralPath $Python)) {
-    Invoke-Checked $UvPath @('venv','--python','3.13',(Join-Path $ThuMuc '.venv'))
+    Invoke-Checked $UvPath @('venv','--managed-python','--python','3.13',(Join-Path $ThuMuc '.venv'))
 }
 Invoke-Checked $UvPath @('pip','install','--python',$Python,'-r',(Join-Path $ThuMuc 'requirements.txt'))
 $Ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
@@ -92,3 +92,4 @@ if (-not (($Ffmpeg -and $Ffprobe) -or ((Test-Path -LiteralPath $LocalFfmpeg) -an
 Invoke-Checked $Python @((Join-Path $ThuMuc 'autovideo.py'), 'kiem-tra')
 Write-Host "Installed and checked: $ThuMuc"
 Write-Host 'Enter GROQ_API_KEY and PIXABAY_API_KEY in .env. Core does not require Node.js or course scripts.'
+Write-Host 'Open this folder in Codex, Claude Code, Antigravity or Cursor. Read huong-dan-su-dung-ai.md.'
